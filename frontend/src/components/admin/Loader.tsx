@@ -7,3 +7,16 @@ const Loader = () => {
 };
 
 export default Loader;
+
+
+export const Loader2 = () => {
+  return (
+    <div className="skeleton-loader">
+      <div className="skeleton-shape"></div>
+      <div className="skeleton-shape" ></div>
+      <div className="skeleton-shape" ></div>
+    </div>
+  );
+};
+
+

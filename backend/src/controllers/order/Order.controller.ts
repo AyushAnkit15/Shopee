@@ -16,7 +16,7 @@ export const newOrder = TryCatch(
       user,
       subtotal,
       discount,
-      shippingCharges,
+      shippingCharges, 
       tax,
       total,
       orderItems,

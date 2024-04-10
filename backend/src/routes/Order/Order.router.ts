@@ -23,7 +23,7 @@ orderRouter.get("/myorders", myOrders);
 
 orderRouter.get("/allorders", isAdmin, allOrders);
 
-orderRouter.get("/getorder/:id", getOrder);
+orderRouter.get("/:id", getOrder);
 
 orderRouter.put("/process/:id", isAdmin, processOrder);
 orderRouter.post("/delete/:id", isAdmin, deleteOrder);

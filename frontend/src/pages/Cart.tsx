@@ -1,61 +1,115 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import { BiSolidError } from "react-icons/bi";
-import CartItem from "../components/CartItem";
+import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
+import CartItemCard from "../components/CartItem";
+import { addToCart, calculatePrice, removeCartItem ,   discountApplied } from "../redux/reducer/cartReducer";
+import { RootState } from "../redux/store";
+import { CartItem } from "../types/types";
+import axios from 'axios'
+import { server } from "../redux/store";
 
 const Cart = () => {
+ 
+
+  const { cartItems, subtotal, tax, total, shippingCharges, discount } =
+    useSelector((state: RootState) => state.cartReducer);
+  const dispatch = useDispatch();
   const [couponCode, setCouponCode] = useState<string>("");
   const [isValidCouponCode, setIsValidCouponCode] = useState<boolean>(false);
+  // useEffect(() => {
+  //   const timeoutId = setTimeout(() => {
+  //     if (Math.random() > 0.5) setIsValidCouponCode(true);
+  //     else setIsValidCouponCode(false);
+  //   }, 1000);
+
+  //   return () => {
+  //     clearTimeout(timeoutId);
+  //     setIsValidCouponCode(false);
+  //   };
+  // }, [couponCode]);
+
+  // const cartItems = [
+  //   {
+  //     id: "abc123",
+  //     name: "Puma Shoes",
+  //     price: 1200,
+  //     url: "https://assets.ajio.com/medias/sys_master/root/20230725/SEm0/64bfeddca9b42d15c96db427/-473Wx593H-469515602-black-MODEL2.jpg",
+  //     quantity: 4,
+  //     stock: 20,
+  //   },
+  // ];
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (Math.random() > 0.5) setIsValidCouponCode(true);
-      else setIsValidCouponCode(false);
+    const { token: cancelToken, cancel } = axios.CancelToken.source();
+
+    const timeOutID = setTimeout(() => {
+      axios
+        .get(`${server}/api/v1/payment/discount?coupon=${couponCode}`, {
+          cancelToken,
+        })
+        .then((res) => {
+          dispatch(discountApplied(res.data.discount));
+          setIsValidCouponCode(true);
+          dispatch(calculatePrice());
+        })
+        .catch(() => {
+          dispatch(discountApplied(0));
+          setIsValidCouponCode(false);
+          dispatch(calculatePrice());
+        });
     }, 1000);
 
     return () => {
-      clearTimeout(timeoutId);
+      clearTimeout(timeOutID);
+      cancel();
       setIsValidCouponCode(false);
     };
   }, [couponCode]);
-  const subTotal = 10000;
-  const cartItems = [
-    {
-      id: "abc123",
-      name: "Puma Shoes",
-      price: 1200,
-      url: "https://assets.ajio.com/medias/sys_master/root/20230725/SEm0/64bfeddca9b42d15c96db427/-473Wx593H-469515602-black-MODEL2.jpg",
-      quantity: 4,
-      stock: 20,
-    },
-  ];
+  const addToCartHandler = (cartItem  : CartItem) => {
+    if(cartItem.stock  < 1) return toast.error('Product out of stock')
 
-  const tax = Math.round(subTotal * 0.18);
-  const shippingCharges = 200;
-  const discount = 200;
-  const total = subTotal + tax + shippingCharges;
+      dispatch(addToCart(cartItem))
+  }
+
+  const incrementHandler = (cartItem: CartItem) => {
+    if (cartItem.quantity >= cartItem.stock) return;
+
+    dispatch(addToCart({ ...cartItem, quantity: cartItem.quantity + 1 }));
+  };
+  const decrementHandler = (cartItem: CartItem) => {
+    if (cartItem.quantity <= 1) return;
+
+    dispatch(addToCart({ ...cartItem, quantity: cartItem.quantity - 1 }));
+  };
+  const removeHandler = (productId: string) => {
+    dispatch(removeCartItem(productId));
+  };
+
+  useEffect(() => {
+    dispatch(calculatePrice());
+  }, [cartItems]);
 
   return (
     <div className="cart">
       <main>
-        {cartItems.length > 0 ? (
-          cartItems.map((item, id) => (
-            <CartItem
-              key={id}
-              id={item.id}
-              name={item.name}
-              price={item.price}
-              url={item.url}
-              quantity={item.quantity}
-              stock={item.stock}
+      {cartItems.length > 0 ? (
+          cartItems.map((i, idx) => (
+            <CartItemCard
+              incrementHandler={incrementHandler}
+              decrementHandler={decrementHandler}
+              removeHandler={removeHandler}
+              key={idx}
+              cartItem={i}
             />
           ))
         ) : (
-          <h1>Cart is Empty</h1>
+          <h1>No Items Added</h1>
         )}
       </main>
 
       <aside>
-        <h2>SUBTOTAL : {subTotal}</h2>
+        <h2>SUBTOTAL : {subtotal}</h2>
         <h2>TAX : {tax}</h2>
         <h2>SHIPPING CHARGES : {shippingCharges}</h2>
 

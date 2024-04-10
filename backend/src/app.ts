@@ -6,6 +6,7 @@ import "dotenv/config";
 import nodeCache from "node-cache";
 import morgan from "morgan";
 import Stripe from 'stripe'
+import cors from 'cors'
 
 import api from "./routes/api.js";
 
@@ -14,6 +15,8 @@ export const NodeCache = new nodeCache({ stdTTL: 100 });
 export const stripe = new Stripe(process.env.STRIPEKEY as string)
 
 const app = express();
+
+app.use(cors())
 
 app.use(express.json());
 

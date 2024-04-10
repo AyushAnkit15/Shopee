@@ -7,16 +7,38 @@ import {
   FaUser,
   FaSignOutAlt,
 } from "react-icons/fa";
-const Header = () => {
-  const logOutHandler = () => {
-    localStorage.clear();
-    window.location.reload();
-  };
+import {User} from '../types/types'
+import { signOut  } from "firebase/auth";
+import { auth } from "../firebase";
+import toast from "react-hot-toast";
+
+
+
+interface UProps  {
+  user:User|null
+}
+const Header = ({user}  : UProps) => {
+  
   const [isOpen, setIsOpen] = useState<boolean>(false);
-  const user = {
-    _id: "hjjt",
-    role: "admin",
-  };
+  
+
+
+  const logOutHandler = async () => {
+    try  { 
+      await signOut(auth); 
+      toast.success("successfullt signed out");
+      
+      setIsOpen(false);
+    }
+
+    catch(error){
+      toast.error('sign out failed')
+    }
+      };
+  // const user = {
+  //   _id  :""  , 
+  //   role : "user"
+  // }
   return (
     <nav className="header">
       <Link onClick={() => setIsOpen(false)} to="/">

@@ -9,8 +9,8 @@ export const createUser = TryCatch(
   async (req: Request<{}, {}, NewUser>, res: Response, next: NextFunction) => {
     const { name, email, photo, gender, role, DOB, _id } = req.body;
 
-    if (!_id || !name || !email || !gender || !role || !DOB) {
-      return next(new ErrorHandler("all fields are required", 400));
+    if (!_id || !name || !email || !gender || !role ||!DOB ) {
+      return next(new ErrorHandler("all fields are requiredddd", 400));
     }
 
     let newUser = await User.findOne({ _id });
@@ -54,7 +54,7 @@ export const getAllUsers = TryCatch(
 
 export const getUser = TryCatch(
   async (req: Request, res: Response, next: NextFunction) => {
-    const user = await User.findById(req.params.id).select("-_id");
+    const user = await User.findById(req.params.id);
     if (!user) {
       next(new ErrorHandler("no user with given id found", 400));
     } else {

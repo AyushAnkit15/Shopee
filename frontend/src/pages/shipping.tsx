@@ -1,93 +1,124 @@
-import React from "react";
-import { useState } from "react";
-import { IoArrowBack } from "react-icons/io5";
+import axios from "axios";
+import { ChangeEvent, FormEvent, useEffect, useState } from "react";
+import toast from "react-hot-toast";
+import { BiArrowBack } from "react-icons/bi";
+import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { saveShippingInfo } from "../redux/reducer/cartReducer";
+import { RootState, server } from "../redux/store";
 
 const Shipping = () => {
-  const [formData, setFormData] = useState({
+  const { cartItems, total } = useSelector(
+    (state: RootState) => state.cartReducer
+  );
+
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const [shippingInfo, setShippingInfo] = useState({
     address: "",
     city: "",
     state: "",
     country: "",
-    pincode: "",
+    pinCode: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log(formData);
-  };
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  const changeHandler = (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    setShippingInfo((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
+
+  const submitHandler = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    dispatch(saveShippingInfo(shippingInfo));
+
+    try {
+      const { data } = await axios.post(
+        `${server}/api/v1/payment/create`,
+        {
+          amount: total,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      navigate("/pay", {
+        state: data.clientSecret,
+      });
+    } catch (error) {
+      console.log(error);
+      toast.error("Something went wrong");
+    }
+  };
+
+  useEffect(() => {
+    if (cartItems.length <= 0) return navigate("/cart");
+  }, [cartItems]);
+
   return (
     <div className="shipping">
-      <button className="back-btn" onClick={() => window.history.back()}>
-        {" "}
-        <IoArrowBack />
+      <button className="back-btn" onClick={() => navigate("/cart")}>
+        <BiArrowBack />
       </button>
-      <form>
-        <h1>SHIPPING INFO</h1>
+
+      <form onSubmit={submitHandler}>
+        <h1>Shipping Address</h1>
 
         <input
-          name="address"
+          required
           type="text"
           placeholder="Address"
-          value={formData.address}
-          onChange={handleChange}
-        ></input>
+          name="address"
+          value={shippingInfo.address}
+          onChange={changeHandler}
+        />
 
         <input
-          name="city"
+          required
           type="text"
-          value={formData.city}
           placeholder="City"
-          onChange={handleChange}
-        ></input>
+          name="city"
+          value={shippingInfo.city}
+          onChange={changeHandler}
+        />
 
         <input
-          name="state"
+          required
           type="text"
-          value={formData.state}
           placeholder="State"
-          onChange={handleChange}
-        ></input>
-
-        {/* <label>
-          Country
-          <input
-            name="country"
-            type="text"
-            value={formData.country}
-            onChange={handleChange}
-          ></input>
-        </label> */}
+          name="state"
+          value={shippingInfo.state}
+          onChange={changeHandler}
+        />
 
         <select
           name="country"
-          value={formData.country}
           required
-          onChange={handleChange}
+          value={shippingInfo.country}
+          onChange={changeHandler}
         >
-          <option value="">Select Country</option>
-          <option value="India">India</option>
-          <option value="USA">USA</option>
-          <option value="UK">UK</option>
-          <option value="Canada">Canada</option>
+          <option value="">Choose Country</option>
+          <option value="india">India</option>
+          <option value="usa">USA</option>
+          <option value="uk">UK</option>
+          <option value="canada">Canada</option>
         </select>
 
         <input
-          name="pincode"
-          placeholder="Pincode"
+          required
           type="number"
-          value={formData.pincode}
-          onChange={handleChange}
-        ></input>
+          placeholder="Pin Code"
+          name="pinCode"
+          value={shippingInfo.pinCode}
+          onChange={changeHandler}
+        />
 
-        <button onSubmit={handleSubmit} type="submit">
-          Pay
-        </button>
+        <button type="submit">Pay Now</button>
       </form>
     </div>
   );

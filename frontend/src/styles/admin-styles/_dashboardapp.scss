@@ -44,7 +44,7 @@
         @include square(100%);
         position: absolute;
         display: grid;
-        place-items: center;
+        place-items: center; 
         background-repeat: no-repeat;
         background-size: contain;
         backface-visibility: hidden;

@@ -2,9 +2,19 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import Header from "./components/header";
-
+import { useEffect } from "react";
+import { Toaster } from "react-hot-toast";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "./firebase";
+import { useDispatch, useSelector } from "react-redux";
+import { userExist, userNotExist } from "./redux/reducer/userReducer";
+import { getUser } from "./redux/api/userAPI";
+import { UserReducerInitialState } from "./types/reducer.types";
+import Loader from "./components/admin/Loader";
+import ProtectedRoute from "./components/ProtectedRoute";
 const Home = lazy(() => import("./pages/Home"));
 const Search = lazy(() => import("./pages/Search"));
+const Checkout = lazy(() => import("./pages/checkout"));
 
 const Shipping = lazy(() => import("./pages/shipping"));
 const Orders = lazy(() => import("./pages/Orders"));
@@ -30,52 +40,79 @@ const TransactionManagement = lazy(
 import "./styles/app.scss";
 
 const App = () => {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <Router>
-        <Header />
+  const dispatch = useDispatch();
+
+  const { user, loading } = useSelector(
+    (state: { userReducer: UserReducerInitialState }) => {
+      return state.userReducer;
+    }
+  );
+
+  useEffect(() => {
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const data = await getUser(user.uid);
+        console.log(data);
+        dispatch(userExist(data?.user));
+      } else dispatch(userNotExist());
+    });
+  }, []);
+  return loading ? (
+    <Loader />
+  ) : (
+    <Router>
+      <Suspense fallback={<div>Loading...</div>}>
+        <Header user={user} />
         <Routes>
           <Route path="/" element={<Home />}></Route>
           <Route path="/search" element={<Search />}></Route>
           <Route path="/cart" element={<Cart />}></Route>
-          <Route path="/shipping" element={<Shipping />}></Route>
-          <Route path="/login" element={<Login />}></Route>
+          <Route
+            path="/login"
+            element={
+              <ProtectedRoute isAuthenticated={user ? false : true}>
+                <Login />
+              </ProtectedRoute>
+            }
+          ></Route>
 
-          <Route path="/orders" element={<Orders />}></Route>
-      
-
-        {/* <Route
+          <Route element={<ProtectedRoute isAuthenticated=  {user  ?true : false}></ProtectedRoute>}>
+            <Route path="/orders" element={<Orders />}></Route>
+            <Route path="/shipping" element={<Shipping />}></Route>
+            <Route path="/pay" element={<Checkout/>}></Route>
+          </Route>
+          <Route
   element={
-    <ProtectedRoute isAuthenticated={true} adminRoute={true} isAdmin={true} />
+    <ProtectedRoute isAuthenticated={true} adminOnly={true} isAdmin={user?.role==="admin"? true  :false } />
   }
-> */}
+></Route>
 
-        <Route path="/admin/dashboard" element={<Dashboard />} />
-        <Route path="/admin/product" element={<Products />} />
-        <Route path="/admin/customer" element={<Customers />} />
-        <Route path="/admin/transaction" element={<Transaction />} />
-        {/* Charts */}
-        <Route path="/admin/chart/bar" element={<Barcharts />} />
-        <Route path="/admin/chart/pie" element={<Piecharts />} />
-        <Route path="/admin/chart/line" element={<Linecharts />} />
-        {/* Apps */}
-        <Route path="/admin/app/coupon" element={<Coupon />} />
-        <Route path="/admin/app/stopwatch" element={<Stopwatch />} />
-        <Route path="/admin/app/toss" element={<Toss />} />
+          <Route path="/admin/dashboard" element={<Dashboard />} />
+          <Route path="/admin/product" element={<Products />} />
+          <Route path="/admin/customer" element={<Customers />} />
+          <Route path="/admin/transaction" element={<Transaction />} />
+          {/* Charts */}
+          <Route path="/admin/chart/bar" element={<Barcharts />} />
+          <Route path="/admin/chart/pie" element={<Piecharts />} />
+          <Route path="/admin/chart/line" element={<Linecharts />} />
+          {/* Apps */}
+          <Route path="/admin/app/coupon" element={<Coupon />} />
+          <Route path="/admin/app/stopwatch" element={<Stopwatch />} />
+          <Route path="/admin/app/toss" element={<Toss />} />
 
-        {/* Management */}
-        <Route path="/admin/product/new" element={<NewProduct />} />
+          {/* Management */}
+          <Route path="/admin/product/new" element={<NewProduct />} />
 
-        <Route path="/admin/product/:id" element={<ProductManagement />} />
+          <Route path="/admin/product/:id" element={<ProductManagement />} />
 
-        <Route
-          path="/admin/transaction/:id"
-          element={<TransactionManagement />}
-        />
-
+          <Route
+            path="/admin/transaction/:id"
+            element={<TransactionManagement />}
+          />
         </Routes>
-      </Router>
-    </Suspense>
+      </Suspense>
+      <Toaster position="bottom-center" />
+    </Router>
   );
 };
 
